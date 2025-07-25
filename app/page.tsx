@@ -44,11 +44,11 @@ export default function WarkopLanding() {
             </div>
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8">
-              <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
-              <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop</Link>
-              <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
-              <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
-              <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
+              <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
+              <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop Wall</Link>
+              <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
+              <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
+              <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
             </nav>
             {/* Mobile menu button */}
             <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -59,11 +59,11 @@ export default function WarkopLanding() {
           {isMenuOpen && (
             <div className="md:hidden py-4 border-t border-[#EBA94B] bg-[#944C1F]">
               <nav className="flex flex-col space-y-4">
-                <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Home</Link>
-                <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Warkop</Link>
-                <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
-                <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
-                <Link href="#" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
+                <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Home</Link>
+                <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Warkop Wall</Link>
+                <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
+                <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
+                <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
               </nav>
             </div>
           )}
@@ -203,19 +203,19 @@ export default function WarkopLanding() {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Platform</h4>
               <div className="space-y-2">
-                <Link href="#" className="block text-gray-400 hover:text-white transition-colors">
+                <Link href="/warkop-wall" className="block text-gray-400 hover:text-white transition-colors">
                   Warkop Wall
                 </Link>
                 <Link href="#" className="block text-gray-400 hover:text-white transition-colors">
                   Cara Kerja
                 </Link>
-                <Link href="#" className="block text-gray-400 hover:text-white transition-colors">
+                <Link href="/warkop-loker" className="block text-gray-400 hover:text-white transition-colors">
                   Loker.warkop.ai
                 </Link>
-                <Link href="#" className="block text-gray-400 hover:text-white transition-colors">
+                <Link href="/warkop-meja" className="block text-gray-400 hover:text-white transition-colors">
                   Meja.warkop.ai
                 </Link>
-                <Link href="#" className="block text-gray-400 hover:text-white transition-colors">
+                <Link href="/warkop-task" className="block text-gray-400 hover:text-white transition-colors">
                   Task.warkop.ai
                 </Link>
               </div>
