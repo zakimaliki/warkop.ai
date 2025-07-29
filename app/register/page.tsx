@@ -1,15 +1,55 @@
 "use client"
 
-import { useState } from "react"
+import { useState } from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { Coffee, User, Mail, Phone, Lock, BadgeDollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Image from "next/image"
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
     const [role, setRole] = useState("freelancer")
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        if (password !== confirmPassword) {
+            setError("Password dan konfirmasi password tidak sama.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            // Store additional user info and role in Firestore
+            await setDoc(doc(db, "users", user.uid), {
+                name,
+                email,
+                phone,
+                role,
+                createdAt: new Date()
+            });
+            // Redirect ke login setelah register sukses
+            router.push("/login");
+        } catch (err: any) {
+            setError(err.message || "Gagal mendaftar. Coba lagi.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f9f6e2] to-[#e9dbc7]">
@@ -20,43 +60,42 @@ export default function RegisterPage() {
                         <Coffee className="w-6 h-6 text-[#944C1F]" />
                         warkop.ai
                     </h1>
-                    <p className="mt-2 text-sm text-[#a67c52]">Daftar akun baru untuk mulai ngopi bareng cari kerja</p>
                 </div>
                 {/* Card */}
                 <div className="bg-white/90 rounded-xl shadow-lg px-8 py-8 w-full max-w-sm flex flex-col items-center">
                     <div className="flex flex-col items-center -mt-16 mb-4">
                         <Image src="/user-login.png" alt="warkop.ai register" width={100} height={100} priority />
                     </div>
-                    <form className="w-full flex flex-col gap-4">
+                    <form className="w-full flex flex-col gap-4" onSubmit={handleRegister}>
                         <div>
                             <Label htmlFor="name" className="text-[#944C1F] flex items-center gap-2">
                                 <User className="w-4 h-4 mr-1" /> Nama Lengkap
                             </Label>
-                            <Input id="name" type="text" placeholder="Masukkan nama lengkap" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="name" />
+                            <Input id="name" type="text" placeholder="Masukkan nama lengkap" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
                         </div>
                         <div>
                             <Label htmlFor="email" className="text-[#944C1F] flex items-center gap-2">
                                 <Mail className="w-4 h-4 mr-1" /> Email Aktif
                             </Label>
-                            <Input id="email" type="email" placeholder="contoh@email.com" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="email" />
+                            <Input id="email" type="email" placeholder="contoh@email.com" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
                         <div>
                             <Label htmlFor="phone" className="text-[#944C1F] flex items-center gap-2">
                                 <Phone className="w-4 h-4 mr-1" /> Nomor HP / WhatsApp
                             </Label>
-                            <Input id="phone" type="tel" placeholder="+62812345678" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="tel" />
+                            <Input id="phone" type="tel" placeholder="+62812345678" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                         </div>
                         <div>
                             <Label htmlFor="password" className="text-[#944C1F] flex items-center gap-2">
                                 <Lock className="w-4 h-4 mr-1" /> Password
                             </Label>
-                            <Input id="password" type="password" placeholder="Minimal 6 karakter" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="new-password" />
+                            <Input id="password" type="password" placeholder="Minimal 6 karakter" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
                         </div>
                         <div>
                             <Label htmlFor="confirm-password" className="text-[#944C1F] flex items-center gap-2">
                                 <Lock className="w-4 h-4 mr-1" /> Konfirmasi Password
                             </Label>
-                            <Input id="confirm-password" type="password" placeholder="Ulangi password" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="new-password" />
+                            <Input id="confirm-password" type="password" placeholder="Ulangi password" className="mt-1 border-[#e9dbc7] focus:border-[#944C1F] focus:ring-[#944C1F]" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                         </div>
                         <div>
                             <Label className="text-[#944C1F] flex items-center gap-2">
@@ -75,9 +114,10 @@ export default function RegisterPage() {
                                 </label>
                             </RadioGroup>
                         </div>
-                        <Button type="submit" className="mt-2 bg-[#4CAF50] hover:bg-[#388E3C] text-white font-semibold flex items-center gap-2 w-full">
+                        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+                        <Button type="submit" className="mt-2 bg-[#4CAF50] hover:bg-[#388E3C] text-white font-semibold flex items-center gap-2 w-full" disabled={loading}>
                             <Coffee className="w-5 h-5" />
-                            Daftar Sekarang
+                            {loading ? "Memproses..." : "Daftar Sekarang"}
                         </Button>
                     </form>
                 </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,25 +8,67 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import Link from "next/link"
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { Menu, X } from "lucide-react";
 
 export default function WarkopLokerPage() {
     const [filter, setFilter] = useState({ remote: false, onsite: false, freelance: false, fulltime: false })
+    const router = useRouter();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                router.push("/login");
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+    const handleLogout = async () => {
+        await signOut(auth);
+        router.push("/login");
+    };
     return (
         <div className="min-h-screen bg-[#FFF8E1] flex flex-col">
             {/* Header */}
-            <header className="bg-[#7B3F10] text-white py-4 border-b border-[#EBA94B]">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xl font-bold flex items-center gap-2">
+            <header className="bg-[#944C1F] shadow-sm border-b border-[#EBA94B]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        {/* Logo */}
+                        <div className="flex items-center space-x-3">
                             <Image src="/logo.png" alt="warkop.ai logo" width={30} height={30} priority />
-                            loker.warkop.ai
-                        </span>
+                            <span className="text-2xl font-bold text-[#F9F6E2] tracking-wide">Warkop Loker</span>
+                        </div>
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:flex space-x-8 items-center">
+                            <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
+                            <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop Wall</Link>
+                            <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
+                            <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
+                            <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
+                            <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold ml-4">Logout</Button>
+                        </nav>
+                        {/* Mobile menu button */}
+                        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                            {isMenuOpen ? <X className="w-6 h-6 text-[#F9F6E2]" /> : <Menu className="w-6 h-6 text-[#F9F6E2]" />}
+                        </button>
                     </div>
-                    <nav className="flex gap-6 text-sm font-medium">
-                        <Link href="/warkop-meja" className="hover:text-[#EBA94B]">Meja.warkop.ai</Link>
-                        <Link href="/warkop-wall" className="hover:text-[#EBA94B]">Warkop Wall</Link>
-                        <Link href="/warkop-task" className="hover:text-[#EBA94B]">Task.warkop.ai</Link>
-                    </nav>
+                    {/* Mobile Navigation */}
+                    {isMenuOpen && (
+                        <div className="md:hidden py-4 border-t border-[#EBA94B] bg-[#944C1F]">
+                            <nav className="flex flex-col space-y-4">
+                                <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Home</Link>
+                                <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Warkop Wall</Link>
+                                <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
+                                <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
+                                <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
+                                <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold">Logout</Button>
+                            </nav>
+                        </div>
+                    )}
                 </div>
             </header>
 

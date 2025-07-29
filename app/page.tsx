@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Search,
   MessageCircle,
@@ -26,10 +26,25 @@ import Image from "next/image"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPencil, faSearch } from '@fortawesome/free-solid-svg-icons'
 import { faImage, faLocationDot, faTag, faHeart, faCommentDots } from '@fortawesome/free-solid-svg-icons'
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function WarkopLanding() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [statusText, setStatusText] = useState("")
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
@@ -43,12 +58,19 @@ export default function WarkopLanding() {
               <span className="text-2xl font-bold text-[#F9F6E2] tracking-wide">warkop.ai</span>
             </div>
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-8">
+            <nav className="hidden md:flex space-x-8 items-center">
               <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
               <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop Wall</Link>
               <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
               <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
               <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
+              {isLoggedIn ? (
+                <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold ml-4">Logout</Button>
+              ) : (
+                <Button asChild className="bg-[#4CAF50] hover:bg-[#388E3C] text-white font-bold ml-4">
+                  <Link href="/login">Login</Link>
+                </Button>
+              )}
             </nav>
             {/* Mobile menu button */}
             <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -64,6 +86,13 @@ export default function WarkopLanding() {
                 <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
                 <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
                 <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
+                {isLoggedIn ? (
+                  <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold">Logout</Button>
+                ) : (
+                  <Button asChild className="bg-[#4CAF50] hover:bg-[#388E3C] text-white font-bold">
+                    <Link href="/login">Login</Link>
+                  </Button>
+                )}
               </nav>
             </div>
           )}
@@ -86,17 +115,22 @@ export default function WarkopLanding() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-4 rounded-xl text-lg font-bold shadow flex items-center gap-2">
-                  <FontAwesomeIcon icon={faPencil} className="w-5 h-5" />
-                  Pasang Status
+                <Button asChild size="lg" className="bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-4 rounded-xl text-lg font-bold shadow flex items-center gap-2">
+                  <Link href="/warkop-wall">
+                    <FontAwesomeIcon icon={faPencil} className="w-5 h-5" />
+                    Pasang Status
+                  </Link>
                 </Button>
                 <Button
+                  asChild
                   size="lg"
                   variant="outline"
                   className="border-2 border-[#4CAF50] text-[#4CAF50] hover:bg-[#E8F5E9] px-8 py-4 rounded-xl text-lg font-bold bg-transparent shadow"
                 >
-                  <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
-                  Cari Talenta
+                  <Link href="/warkop-loker">
+                    <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
+                    Cari Talenta
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -145,7 +179,7 @@ export default function WarkopLanding() {
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[#944C1F]">
                   <Image src="/bag.png" alt="Loker" width={40} height={40} className="w-10 h-10" />
                 </div>
-                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Loker.warkop.ai</h3>
+                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Warkop Loker</h3>
                 <p className="text-[#6B4A2B] mb-4">Cari lowongan kerja terbaru</p>
               </CardContent>
             </Card>
@@ -155,7 +189,7 @@ export default function WarkopLanding() {
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[#944C1F]">
                   <Image src="/person.png" alt="Meja" width={40} height={40} className="w-10 h-10" />
                 </div>
-                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Meja.warkop.ai</h3>
+                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Warkop Meja</h3>
                 <p className="text-[#6B4A2B] mb-4">Kelola profil & portfolio</p>
               </CardContent>
             </Card>
@@ -165,7 +199,7 @@ export default function WarkopLanding() {
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[#944C1F]">
                   <Image src="/list.png" alt="Task" width={40} height={40} className="w-10 h-10" />
                 </div>
-                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Task.warkop.ai</h3>
+                <h3 className="text-lg font-bold text-[#944C1F] mb-2">Warkop Task</h3>
                 <p className="text-[#6B4A2B] mb-4">Manajemen tugas project</p>
               </CardContent>
             </Card>
@@ -210,13 +244,13 @@ export default function WarkopLanding() {
                   Cara Kerja
                 </Link>
                 <Link href="/warkop-loker" className="block text-gray-400 hover:text-white transition-colors">
-                  Loker.warkop.ai
+                  Warkop.Loker
                 </Link>
                 <Link href="/warkop-meja" className="block text-gray-400 hover:text-white transition-colors">
-                  Meja.warkop.ai
+                  Warkop.Meja
                 </Link>
                 <Link href="/warkop-task" className="block text-gray-400 hover:text-white transition-colors">
-                  Task.warkop.ai
+                  Warkop.Task
                 </Link>
               </div>
             </div>

@@ -1,23 +1,70 @@
+"use client"
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { Menu, X } from "lucide-react";
 
 export default function WarkopMejaPage() {
+    const router = useRouter();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                router.push("/login");
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+    const handleLogout = async () => {
+        await signOut(auth);
+        router.push("/login");
+    };
     return (
-        <div className="min-h-screen flex flex-col bg-[#FCF6ED]">
+        <div className="min-h-screen flex flex-col bg-[#F4F6F8]">
             {/* Header */}
-            <header className="w-full bg-[#FFF7ED] border-b border-[#E5E5E5] flex items-center justify-between px-6 py-3">
-                <div className="flex items-center gap-2">
-                    <Image src="/logo-2.png" alt="Meja.warkop.ai" width={36} height={36} />
-                    <span className="font-bold text-[#A05A13] text-lg">Meja.warkop.ai</span>
+            <header className="bg-[#944C1F] shadow-sm border-b border-[#EBA94B]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        {/* Logo */}
+                        <div className="flex items-center space-x-3">
+                            <Image src="/logo.png" alt="warkop.ai logo" width={30} height={30} priority />
+                            <span className="text-2xl font-bold text-[#F9F6E2] tracking-wide">Warkop Meja</span>
+                        </div>
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:flex space-x-8 items-center">
+                            <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
+                            <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop Wall</Link>
+                            <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
+                            <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
+                            <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
+                            <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold ml-4">Logout</Button>
+                        </nav>
+                        {/* Mobile menu button */}
+                        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                            {isMenuOpen ? <X className="w-6 h-6 text-[#F9F6E2]" /> : <Menu className="w-6 h-6 text-[#F9F6E2]" />}
+                        </button>
+                    </div>
+                    {/* Mobile Navigation */}
+                    {isMenuOpen && (
+                        <div className="md:hidden py-4 border-t border-[#EBA94B] bg-[#944C1F]">
+                            <nav className="flex flex-col space-y-4">
+                                <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Home</Link>
+                                <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Warkop Wall</Link>
+                                <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
+                                <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
+                                <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
+                                <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold">Logout</Button>
+                            </nav>
+                        </div>
+                    )}
                 </div>
-                <nav className="flex gap-8 text-[#6B4F1D] font-medium text-base">
-                    <Link href="/warkop-meja">Beranda</Link>
-                    <Link href="/warkop-loker">Loker.warkop.ai</Link>
-                    <Link href="/warkop-wall">Warkop Wall</Link>
-                    <Link href="/warkop-task">Task.warkop.ai</Link>
-                </nav>
             </header>
 
             {/* Main Content */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     MessageCircle,
     Heart,
@@ -23,11 +23,29 @@ import Image from "next/image"
 import Link from "next/link"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLocationDot, faTag, faHeart, faCommentDots } from '@fortawesome/free-solid-svg-icons'
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { signOut } from "firebase/auth";
 
 export default function WarkopWallPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [statusText, setStatusText] = useState("")
     const [filter, setFilter] = useState("semua")
+    const router = useRouter();
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                router.push("/login");
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        router.push("/login");
+    };
 
     return (
         <div className="min-h-screen bg-[#F4F6F8]">
@@ -41,12 +59,13 @@ export default function WarkopWallPage() {
                             <span className="text-2xl font-bold text-[#F9F6E2] tracking-wide">Warkop Wall</span>
                         </div>
                         {/* Desktop Navigation */}
-                        <nav className="hidden md:flex space-x-8">
+                        <nav className="hidden md:flex space-x-8 items-center">
                             <Link href="/" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Home</Link>
                             <Link href="/warkop-wall" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Warkop Wall</Link>
                             <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Loker</Link>
                             <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Tugas</Link>
                             <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B] transition">Meja Saya</Link>
+                            <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold ml-4">Logout</Button>
                         </nav>
                         {/* Mobile menu button */}
                         <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -62,6 +81,7 @@ export default function WarkopWallPage() {
                                 <Link href="/warkop-loker" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Loker</Link>
                                 <Link href="/warkop-task" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Tugas</Link>
                                 <Link href="/warkop-meja" className="text-[#F9F6E2] font-medium hover:text-[#EBA94B]">Meja Saya</Link>
+                                <Button onClick={handleLogout} className="bg-[#EBA94B] hover:bg-[#FFD699] text-[#7B3F10] font-bold">Logout</Button>
                             </nav>
                         </div>
                     )}
