@@ -64,7 +64,11 @@ export default function WarkopLokerPage() {
         if (!selectedJob) return;
         await updateJob(selectedJob.id, {
             ...formData,
-            tags: (formData.tags as string).split(',').map((tag: string) => tag.trim()).filter(Boolean),
+            tags: typeof formData.tags === 'string'
+                ? formData.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+                : Array.isArray(formData.tags)
+                    ? formData.tags.map((tag: unknown) => String(tag).trim()).filter(Boolean)
+                    : [],
             type: formData.type,
             isRemote: !!formData.isRemote,
         })

@@ -1,3 +1,12 @@
+// Fungsi utilitas untuk normalisasi ke string
+function normalizeToString(value: unknown): string {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(v => String(v)).join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,7 +26,7 @@ interface JobFormProps {
     description: string;
     contact: string;
     isRemote: boolean;
-    tags: string;
+    tags: string | string[]; // ubah bagian ini
     requirements: string | string[];
     salaryMin: string;
     salaryMax: string;
@@ -29,7 +38,20 @@ interface JobFormProps {
 }
 
 export function JobForm({ onSuccess, initialValues, onSubmit, submitLabel }: JobFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    company: string;
+    location: string;
+    type: string;
+    description: string;
+    contact: string;
+    isRemote: boolean;
+    tags: string;
+    requirements: string;
+    salaryMin: string;
+    salaryMax: string;
+    salaryCurrency: string;
+  }>({
     title: initialValues?.title || '',
     company: initialValues?.company || '',
     location: initialValues?.location || '',
@@ -37,12 +59,8 @@ export function JobForm({ onSuccess, initialValues, onSubmit, submitLabel }: Job
     description: initialValues?.description || '',
     contact: initialValues?.contact || '',
     isRemote: initialValues?.isRemote || false,
-    tags: initialValues?.tags || '',
-    // Map requirements array to string for editing
-    requirements: Array.isArray(initialValues?.requirements)
-      ? initialValues.requirements.join(', ')
-      : (initialValues?.requirements || ''),
-    // Map salary object to fields for editing
+    tags: normalizeToString(initialValues?.tags),
+    requirements: normalizeToString(initialValues?.requirements),
     salaryMin: typeof initialValues?.salary === 'object' && initialValues.salary?.min !== undefined
       ? String(initialValues.salary.min)
       : (initialValues?.salaryMin || ''),
@@ -66,13 +84,19 @@ export function JobForm({ onSuccess, initialValues, onSubmit, submitLabel }: Job
     }
     setSubmitting(true);
     try {
+      console.log('DEBUG: formData.tags =', formData.tags);
+      console.log('DEBUG: typeof tags =', typeof formData.tags);
       const payload = {
         ...formData,
         postedBy: currentUser.uid,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        requirements: formData.requirements
-          ? formData.requirements.split(',').map((req: string) => req.trim()).filter(Boolean)
-          : [],
+        tags: normalizeToString(formData.tags)
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean),
+        requirements: normalizeToString(formData.requirements)
+          .split(',')
+          .map(req => req.trim())
+          .filter(Boolean),
         salary: formData.salaryMin && formData.salaryMax ? {
           min: Number(formData.salaryMin),
           max: Number(formData.salaryMax),
@@ -80,6 +104,7 @@ export function JobForm({ onSuccess, initialValues, onSubmit, submitLabel }: Job
         } : undefined,
         type: formData.type as 'freelance' | 'remote' | 'onsite' | 'fulltime' | 'part-time',
       };
+      console.log("PAYLOAD:", payload);
       if (onSubmit) {
         await onSubmit(payload);
       } else {
@@ -109,6 +134,9 @@ export function JobForm({ onSuccess, initialValues, onSubmit, submitLabel }: Job
   };
 
   const handleChange = (field: string, value: string | boolean) => {
+    if (field === 'tags' || field === 'requirements') {
+      value = typeof value === 'string' ? value : normalizeToString(value);
+    }
     setFormData(prev => ({
       ...prev,
       [field]: value

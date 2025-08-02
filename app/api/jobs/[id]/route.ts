@@ -3,8 +3,8 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 // GET: /api/jobs/[id] - Get specific job by ID
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
+  const { id } = context.params;
   if (!id) return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
   
   try {
@@ -23,8 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PATCH: /api/jobs/[id] - Update specific job
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+  const { id } = context.params;
   if (!id) return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
   
   try {
@@ -50,8 +50,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE: /api/jobs/[id] - Delete specific job
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+  const { id } = context.params;
   if (!id) return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
   
   try {
@@ -70,4 +70,4 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
-} 
+}
