@@ -12,17 +12,36 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react"
+import { useJobs } from "@/hooks/use-jobs"
+import { useAIMatch } from "@/hooks/use-ai-match"
+import { JobCard } from "@/components/job-card"
+import { JobForm } from "@/components/job-form"
+import { toast } from "sonner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import type { Job } from "@/hooks/use-jobs"
 
 export default function WarkopLokerPage() {
     const [filter, setFilter] = useState({ remote: false, onsite: false, freelance: false, fulltime: false })
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedType, setSelectedType] = useState('all');
     const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+    const [showDetail, setShowDetail] = useState(false)
+    const [editMode, setEditMode] = useState(false)
+    
+    const { jobs, loading, error, fetchJobs, updateJob, deleteJob } = useJobs();
+    const { matchedJobs, getMatchedJobs } = useAIMatch();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (!user) {
                 router.push("/login");
+            } else {
+                // Fetch jobs when user is authenticated
+                fetchJobs();
+                getMatchedJobs(user.uid);
             }
         });
         return () => unsubscribe();
@@ -31,6 +50,60 @@ export default function WarkopLokerPage() {
         await signOut(auth);
         router.push("/login");
     };
+
+    const currentUser = auth.currentUser;
+
+    const handleViewDetails = (jobId: string) => {
+        const job = jobs.find((j: Job) => j.id === jobId) || null
+        setSelectedJob(job)
+        setShowDetail(true)
+        setEditMode(false)
+    }
+
+    const handleEditJob = async (formData: any) => {
+        if (!selectedJob) return;
+        await updateJob(selectedJob.id, {
+            ...formData,
+            tags: (formData.tags as string).split(',').map((tag: string) => tag.trim()).filter(Boolean),
+            type: formData.type,
+            isRemote: !!formData.isRemote,
+        })
+        toast.success('Lowongan berhasil diupdate!')
+        setEditMode(false)
+        setShowDetail(false)
+        setSelectedJob(null)
+        fetchJobs()
+    }
+
+    const handleDeleteJob = async () => {
+        if (!selectedJob) return;
+        if (!window.confirm('Yakin ingin menghapus lowongan ini?')) return;
+        await deleteJob(selectedJob.id)
+        toast.success('Lowongan berhasil dihapus!')
+        setShowDetail(false)
+        setSelectedJob(null)
+        fetchJobs()
+    }
+
+    // Tambahkan fungsi filter dan search sebelum render jobs
+    const filteredJobs = jobs.filter((job) => {
+      // Filter by search term
+      const search = searchTerm.toLowerCase();
+      const matchesSearch =
+        job.title.toLowerCase().includes(search) ||
+        job.company.toLowerCase().includes(search) ||
+        job.location.toLowerCase().includes(search) ||
+        job.description.toLowerCase().includes(search);
+      // Filter by type
+      const matchesType = selectedType === 'all' || job.type === selectedType;
+      // Filter by remote/onsite/freelance/fulltime
+      const matchesRemote = !filter.remote || job.isRemote;
+      const matchesOnsite = !filter.onsite || job.type === 'onsite';
+      const matchesFreelance = !filter.freelance || job.type === 'freelance';
+      const matchesFulltime = !filter.fulltime || job.type === 'fulltime';
+      return matchesSearch && matchesType && matchesRemote && matchesOnsite && matchesFreelance && matchesFulltime;
+    });
+
     return (
         <div className="min-h-screen bg-[#FFF8E1] flex flex-col">
             {/* Header */}
@@ -86,27 +159,46 @@ export default function WarkopLokerPage() {
                     <Card className="mb-6">
                         <CardContent className="p-4 flex flex-col gap-3">
                             <div className="flex flex-col md:flex-row gap-3 items-center">
-                                <Input placeholder="Cari lowongan atau lokasi..." className="flex-1 bg-[#FFF8E1] border border-[#EBA94B]" />
-                                <select className="border border-[#EBA94B] rounded-md px-3 py-2 text-sm text-[#7B3F10] bg-white">
-                                    <option>Semua Jenis</option>
-                                    <option>Freelance</option>
-                                    <option>Full-time</option>
-                                    <option>Remote</option>
-                                    <option>Onsite</option>
-                                </select>
+                                <Input 
+                                    placeholder="Cari lowongan atau lokasi..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="flex-1 bg-[#FFF8E1] border border-[#EBA94B]" 
+                                />
+                                {/* Hapus dropdown select jenis pekerjaan */}
                             </div>
                             <div className="flex gap-4 flex-wrap text-sm">
                                 <label className="flex items-center gap-1">
-                                    <input type="checkbox" className="accent-[#7B3F10]" /> Remote
+                                    <input 
+                                        type="checkbox" 
+                                        checked={filter.remote}
+                                        onChange={(e) => setFilter(prev => ({ ...prev, remote: e.target.checked }))}
+                                        className="accent-[#7B3F10]" 
+                                    /> Remote
                                 </label>
                                 <label className="flex items-center gap-1">
-                                    <input type="checkbox" className="accent-[#7B3F10]" /> Onsite
+                                    <input 
+                                        type="checkbox" 
+                                        checked={filter.onsite}
+                                        onChange={(e) => setFilter(prev => ({ ...prev, onsite: e.target.checked }))}
+                                        className="accent-[#7B3F10]" 
+                                    /> Onsite
                                 </label>
                                 <label className="flex items-center gap-1">
-                                    <input type="checkbox" className="accent-[#7B3F10]" /> Freelance
+                                    <input 
+                                        type="checkbox" 
+                                        checked={filter.freelance}
+                                        onChange={(e) => setFilter(prev => ({ ...prev, freelance: e.target.checked }))}
+                                        className="accent-[#7B3F10]" 
+                                    /> Freelance
                                 </label>
                                 <label className="flex items-center gap-1">
-                                    <input type="checkbox" className="accent-[#7B3F10]" /> Full-time
+                                    <input 
+                                        type="checkbox" 
+                                        checked={filter.fulltime}
+                                        onChange={(e) => setFilter(prev => ({ ...prev, fulltime: e.target.checked }))}
+                                        className="accent-[#7B3F10]" 
+                                    /> Full-time
                                 </label>
                             </div>
                         </CardContent>
@@ -114,100 +206,58 @@ export default function WarkopLokerPage() {
 
                     {/* Daftar Lowongan */}
                     <div className="flex flex-col gap-4">
-                        {/* Card 1 */}
-                        <Card className="border-[#FF7043] border-2">
-                            <CardContent className="p-4 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">💻</span>
-                                    <span className="font-bold text-[#7B3F10]">Programmer Freelance</span>
-                                    <Badge className="bg-[#43A047]/10 text-[#43A047] border border-[#43A047] ml-auto">Remote</Badge>
-                                </div>
-                                <div className="text-sm text-[#7B3F10]">Percetakan Angkasa - Madiun</div>
-                                <div className="text-sm text-[#2C4257]">Butuh programmer untuk develop website company profile dan sistem inventory. Stack: PHP, MySQL, Bootstrap.</div>
-                                <div className="flex items-center gap-3 text-xs text-[#7B3F10]/70 mt-1">
-                                    <span>Madiun / Remote</span>
-                                    <span>•</span>
-                                    <span>2 jam lalu</span>
-                                </div>
-                                <div className="flex gap-2 mt-2">
-                                    <Button className="bg-[#FF7043] hover:bg-[#FF5722] text-white font-bold flex-1">Lamar</Button>
-                                    <Button variant="outline" className="border-[#FF7043] text-[#FF7043] font-bold flex-1">Lihat Detail</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        {/* Card 2 */}
-                        <Card className="border-[#1976D2] border-2">
-                            <CardContent className="p-4 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">🎨</span>
-                                    <span className="font-bold text-[#7B3F10]">Desainer Grafis</span>
-                                    <Badge className="bg-[#1976D2]/10 text-[#1976D2] border border-[#1976D2] ml-auto">Freelance</Badge>
-                                </div>
-                                <div className="text-sm text-[#7B3F10]">Warung Kopi Santai - Yogyakarta</div>
-                                <div className="text-sm text-[#2C4257]">Perlu desainer untuk bikin menu board, poster promosi, dan konten social media. Portfolio wajib!</div>
-                                <div className="flex items-center gap-3 text-xs text-[#7B3F10]/70 mt-1">
-                                    <span>Yogyakarta</span>
-                                    <span>•</span>
-                                    <span>5 jam lalu</span>
-                                </div>
-                                <div className="flex gap-2 mt-2">
-                                    <Button className="bg-[#FF7043] hover:bg-[#FF5722] text-white font-bold flex-1">Lamar</Button>
-                                    <Button variant="outline" className="border-[#FF7043] text-[#FF7043] font-bold flex-1">Lihat Detail</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        {/* Card 3 */}
-                        <Card className="border-[#8E24AA] border-2">
-                            <CardContent className="p-4 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">📋</span>
-                                    <span className="font-bold text-[#7B3F10]">Social Media Specialist</span>
-                                    <Badge className="bg-[#8E24AA]/10 text-[#8E24AA] border border-[#8E24AA] ml-auto">Part-time</Badge>
-                                </div>
-                                <div className="text-sm text-[#7B3F10]">Kedai Kopi Nusantara - Jakarta</div>
-                                <div className="text-sm text-[#2C4257]">Handle Instagram & TikTok kedai kopi. Bikin konten kreatif, engage sama followers, analisis performa.</div>
-                                <div className="flex items-center gap-3 text-xs text-[#7B3F10]/70 mt-1">
-                                    <span>Jakarta Selatan</span>
-                                    <span>•</span>
-                                    <span>1 hari lalu</span>
-                                </div>
-                                <div className="flex gap-2 mt-2">
-                                    <Button className="bg-[#FF7043] hover:bg-[#FF5722] text-white font-bold flex-1">Lamar</Button>
-                                    <Button variant="outline" className="border-[#FF7043] text-[#FF7043] font-bold flex-1">Lihat Detail</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {loading ? (
+                            <div className="text-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF7043] mx-auto"></div>
+                                <p className="text-[#7B3F10] mt-2">Memuat lowongan...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-8">
+                                <p className="text-red-500">{error}</p>
+                                <Button onClick={() => fetchJobs()} className="mt-2">Coba Lagi</Button>
+                            </div>
+                        ) : filteredJobs.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-[#7B3F10]">Tidak ada lowongan yang cocok</p>
+                            </div>
+                        ) : (
+                            filteredJobs.map((job) => (
+                                <JobCard 
+                                    key={job.id} 
+                                    job={job}
+                                    onViewDetails={handleViewDetails}
+                                />
+                            ))
+                        )}
                     </div>
                 </section>
 
                 {/* Right: Sidebar */}
                 <aside className="w-full md:w-[340px] flex-shrink-0 flex flex-col gap-6">
                     {/* Pasang Lowongan */}
-                    <Card>
-                        <CardContent className="p-6 flex flex-col gap-3">
-                            <h3 className="font-bold text-[#7B3F10] mb-2">Pasang Lowongan</h3>
-                            <Input placeholder="Nama Usaha" className="bg-[#FFF8E1] border border-[#EBA94B]" />
-                            <Input placeholder="Judul Lowongan" className="bg-[#FFF8E1] border border-[#EBA94B]" />
-                            <select className="border border-[#EBA94B] rounded-md px-3 py-2 text-sm text-[#7B3F10] bg-white">
-                                <option>Jenis Pekerjaan</option>
-                                <option>Freelance</option>
-                                <option>Full-time</option>
-                                <option>Remote</option>
-                                <option>Onsite</option>
-                            </select>
-                            <Textarea placeholder="Deskripsi Singkat" className="bg-[#FFF8E1] border border-[#EBA94B]" />
-                            <Input placeholder="Lokasi" className="bg-[#FFF8E1] border border-[#EBA94B]" />
-                            <Input placeholder="Kontak" className="bg-[#FFF8E1] border border-[#EBA94B]" />
-                            <Button className="bg-[#FF7043] hover:bg-[#FF5722] text-white font-bold mt-2">+ Pasang Lowongan</Button>
-                        </CardContent>
-                    </Card>
+                    <JobForm onSuccess={() => fetchJobs()} />
 
                     {/* AI Match */}
                     <Card className="bg-[#E8F5E9] border-none">
                         <CardContent className="p-4 flex flex-col gap-2">
                             <span className="font-semibold text-[#388E3C]">AI Match</span>
-                            <span className="text-sm text-[#2C4257]">Ada 3 lowongan cocok buat kamu hari ini! Cek sekarang.</span>
-                            <Button className="bg-[#43A047] text-white px-3 py-1 rounded-md text-xs w-fit">Lihat Match</Button>
+                            <span className="text-sm text-[#2C4257]">
+                                {matchedJobs.length > 0 
+                                    ? `Ada ${matchedJobs.length} lowongan cocok buat kamu hari ini!` 
+                                    : 'Belum ada rekomendasi lowongan'
+                                }
+                            </span>
+                            {matchedJobs.length > 0 && (
+                                <Button 
+                                    onClick={() => {
+                                        // Handle view matched jobs
+                                        console.log('View matched jobs:', matchedJobs);
+                                    }}
+                                    className="bg-[#43A047] text-white px-3 py-1 rounded-md text-xs w-fit"
+                                >
+                                    Lihat Match
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -233,6 +283,70 @@ export default function WarkopLokerPage() {
                     <span className="text-sm text-[#EBA94B] mt-1">Ekosistem kerja berbasis komunitas</span>
                 </div>
             </footer>
+
+            <Dialog open={showDetail} onOpenChange={(open) => { setShowDetail(open); if (!open) { setEditMode(false); setSelectedJob(null); } }}>
+                <DialogContent>
+                    {selectedJob && !editMode && (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle>{selectedJob.title}</DialogTitle>
+                            </DialogHeader>
+                            <div className="mb-2 text-sm text-[#7B3F10]">{selectedJob.company} - {selectedJob.location}</div>
+                            <div className="mb-2 text-xs text-[#7B3F10]/70">{selectedJob.type} {selectedJob.isRemote && '/ Remote'}</div>
+                            <div className="mb-2 text-[#2C4257]">{selectedJob.description}</div>
+                            {/* Salary */}
+                            {selectedJob.salary && selectedJob.salary.min !== undefined && selectedJob.salary.max !== undefined && (
+                                <div className="mb-2 text-xs text-[#7B3F10]/70">
+                                    Gaji: Rp{selectedJob.salary.min.toLocaleString()} - Rp{selectedJob.salary.max.toLocaleString()} ({selectedJob.salary.currency || 'IDR'})
+                                </div>
+                            )}
+                            {/* Requirements */}
+                            {selectedJob.requirements && selectedJob.requirements.length > 0 && (
+                                <div className="mb-2 text-xs text-[#7B3F10]/70">
+                                    <div className="font-semibold">Requirements:</div>
+                                    <ul className="list-disc list-inside ml-2">
+                                        {selectedJob.requirements.map((req: string, idx: number) => (
+                                            <li key={idx}>{req}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            <div className="mb-2 text-xs text-[#7B3F10]/70">Kontak: {selectedJob.contact}</div>
+                            <div className="mb-2 text-xs text-[#7B3F10]/70">Tags: {selectedJob.tags?.join(', ')}</div>
+                            <DialogFooter>
+                                {currentUser && selectedJob.postedBy === currentUser.uid && (
+                                    <div className="flex gap-2 w-full">
+                                        <Button className="flex-1 bg-[#43A047] text-white" onClick={() => setEditMode(true)}>Edit</Button>
+                                        <Button className="flex-1 bg-[#FF7043] text-white" onClick={handleDeleteJob}>Hapus</Button>
+                                    </div>
+                                )}
+                                <Button variant="outline" className="w-full mt-2" onClick={() => setShowDetail(false)}>Tutup</Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                    {selectedJob && editMode && (
+                        <JobForm
+                            initialValues={{
+                                title: selectedJob.title,
+                                company: selectedJob.company,
+                                location: selectedJob.location,
+                                type: selectedJob.type,
+                                description: selectedJob.description,
+                                contact: selectedJob.contact,
+                                isRemote: selectedJob.isRemote,
+                                tags: selectedJob.tags?.join(', '),
+                                requirements: Array.isArray(selectedJob.requirements) ? selectedJob.requirements.join(', ') : '',
+                                salaryMin: selectedJob.salary && selectedJob.salary.min !== undefined ? String(selectedJob.salary.min) : '',
+                                salaryMax: selectedJob.salary && selectedJob.salary.max !== undefined ? String(selectedJob.salary.max) : '',
+                                salaryCurrency: selectedJob.salary && selectedJob.salary.currency ? selectedJob.salary.currency : 'IDR',
+                            }}
+                            onSubmit={handleEditJob}
+                            submitLabel="Simpan Perubahan"
+                            onSuccess={() => {}}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
